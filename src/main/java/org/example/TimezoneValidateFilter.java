@@ -6,6 +6,7 @@ import javax.servlet.http.HttpFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
@@ -22,15 +23,24 @@ public class TimezoneValidateFilter extends HttpFilter {
                             HttpServletResponse res,
                             FilterChain chain) throws IOException, ServletException {
 
-        String timezone = req.getParameter("timezone");
 
-       if (timezone.contains("timezone")) {
+        String timezone = req.getParameter("timezone");
+        if (timezone == null || isValidTimezone(timezone)) {
             chain.doFilter(req, res);
         } else {
-           res.setStatus(400);
-            res.getWriter().write("Invalid timezone");
+            res.setContentType("text/html; charset=utf-8");
+            res.getWriter().write("ERROR 400: Invalid timezone");
+            res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             res.getWriter().close();
         }
-        super.doFilter(req, res, chain);
     }
+
+        private boolean isValidTimezone(String timezone) {
+            try {
+                ZoneId.of(timezone.replaceAll(" ", "+"));
+                return true;
+            } catch (DateTimeException e) {
+                return false;
+            }
+        }
 }
